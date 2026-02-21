@@ -8,14 +8,14 @@ import { empresa } from '../config/empresaConfig.js';
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
   port: process.env.EMAIL_PORT,
-  secure: false,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
   },
   family: 4,
   tls: { rejectUnauthorized: false },
-  connectionTimeout: 20000 // 👈 aumenta el tiempo de espera a 20s
+  //connectionTimeout: 20000 // 👈 aumenta el tiempo de espera a 20s
 });
 
 /* =====================================================
