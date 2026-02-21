@@ -126,7 +126,7 @@ export const generarPDFNotaVenta = (nota) => {
       const precio = Number(item.precio_unitario || 0);
       const subtotal = Number(item.subtotal || 0);
 
-      // ✅ Usar descripcion (que es p.nombre)
+      // ✅ Usar descripcion (que viene de p.nombre)
       const descripcionCompleta = item.descripcion || '';
 
       const textHeight = doc.heightOfString(descripcionCompleta, {
