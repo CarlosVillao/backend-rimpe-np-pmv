@@ -122,14 +122,12 @@ export const generarPDFNotaVenta = (nota) => {
     /* =====================================================
     PRODUCTOS
     ===================================================== */
-
     (nota.productos || []).forEach((item, index) => {
-
       const precio = Number(item.precio_unitario || 0);
       const subtotal = Number(item.subtotal || 0);
 
-      // ✅ SOLO usamos nombre (que es tu descripción real)
-      const descripcionCompleta = item.nombre || '';
+      // ✅ Usar descripcion (que es p.nombre)
+      const descripcionCompleta = item.descripcion || '';
 
       const textHeight = doc.heightOfString(descripcionCompleta, {
         width: 230
@@ -155,8 +153,6 @@ export const generarPDFNotaVenta = (nota) => {
 
       y += rowHeight;
     });
-
-
 
     /* =====================================================
        TOTAL
