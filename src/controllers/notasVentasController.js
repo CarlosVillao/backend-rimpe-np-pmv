@@ -109,7 +109,7 @@ const crearNotaVentaInterna = async (connection, datos) => {
       await connection.execute('UPDATE productos SET stock = stock - ? WHERE id = ?', [item.cantidad, item.producto_id]);
 
       productosPDF.push({
-        descripcion: p.nombre, // descripción del catálogo
+        descripcion: p.nombre, // 👈 nombre del producto como descripción
         cantidad: item.cantidad,
         precio_unitario: item.precio_unitario,
         subtotal: sub
@@ -418,9 +418,9 @@ export const descargarNotaVentaPDF = async (req, res) => {
     // 🔥 USAR PRECIO Y DETALLE GUARDADO
     const [productos] = await pool.query(`
       SELECT d.cantidad,
-       d.precio_unitario,
-       d.subtotal,
-       p.nombre AS descripcion
+             d.precio_unitario,
+             d.subtotal,
+             p.nombre AS descripcion
       FROM nota_venta_detalle d
       JOIN productos p ON p.id = d.producto_id
       WHERE d.nota_venta_id = ?
