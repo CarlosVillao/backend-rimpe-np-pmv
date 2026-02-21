@@ -33,14 +33,9 @@ const crearNotaVentaInterna = async (connection, datos) => {
   try {
     await connection.beginTransaction();
 
-    /* ==============================
-       1️⃣ OBTENER O CREAR CLIENTE
-    ============================== */
+    // 1️⃣ OBTENER O CREAR CLIENTE
     if (cliente_id) {
-      const [[c]] = await connection.query(
-        'SELECT * FROM clientes WHERE id = ?',
-        [cliente_id]
-      );
+      const [[c]] = await connection.query('SELECT * FROM clientes WHERE id = ?', [cliente_id]);
       if (!c) throw new Error('Cliente no existe');
       clienteFinal = c;
     } else if (cliente) {
@@ -53,8 +48,7 @@ const crearNotaVentaInterna = async (connection, datos) => {
         clienteFinal = existing;
       } else {
         const [result] = await connection.execute(
-          `INSERT INTO clientes 
-           (identificacion, nombre, telefono, direccion, email) 
+          `INSERT INTO clientes (identificacion, nombre, telefono, direccion, email) 
            VALUES (?, ?, ?, ?, ?)`,
           [
             cliente.identificacion,
@@ -65,17 +59,12 @@ const crearNotaVentaInterna = async (connection, datos) => {
           ]
         );
 
-        const [[nuevo]] = await connection.query(
-          'SELECT * FROM clientes WHERE id = ?',
-          [result.insertId]
-        );
+        const [[nuevo]] = await connection.query('SELECT * FROM clientes WHERE id = ?', [result.insertId]);
         clienteFinal = nuevo;
       }
     }
 
-    /* ==============================
-       2️⃣ CREAR NOTA
-    ============================== */
+    // 2️⃣ CREAR NOTA
     numero = await generarNumeroNota(connection);
     fechaActual = new Date();
 
@@ -97,26 +86,16 @@ const crearNotaVentaInterna = async (connection, datos) => {
     notaId = notaRes.insertId;
     const productosPDF = [];
 
-    /* ==============================
-       3️⃣ INSERTAR DETALLES
-    ============================== */
+    // 3️⃣ INSERTAR DETALLES
     for (const item of productos) {
-      const [[p]] = await connection.query(
-        'SELECT * FROM productos WHERE id = ? FOR UPDATE',
-        [item.producto_id]
-      );
-
+      const [[p]] = await connection.query('SELECT * FROM productos WHERE id = ? FOR UPDATE', [item.producto_id]);
       if (!p) throw new Error('Producto no existe');
       if (p.stock < item.cantidad) {
         throw new Error(`Stock insuficiente: ${p.nombre}`);
       }
 
-      let precio =
-        tipo_precio === 'EFECTIVO' ? p.efectivo :
-          tipo_precio === 'DEBITO' ? p.pvp :
-            tipo_precio === 'CREDITO_1' ? p.cred_10 :
-              p.cred_15;
-
+      // 🔥 USAR PRECIO EDITABLE DEL FRONTEND
+      const precio = item.precio_unitario;
       const sub = precio * item.cantidad;
       subtotal += sub;
 
@@ -127,35 +106,22 @@ const crearNotaVentaInterna = async (connection, datos) => {
         [notaId, item.producto_id, item.cantidad, precio, sub]
       );
 
-      await connection.execute(
-        'UPDATE productos SET stock = stock - ? WHERE id = ?',
-        [item.cantidad, item.producto_id]
-      );
+      await connection.execute('UPDATE productos SET stock = stock - ? WHERE id = ?', [item.cantidad, item.producto_id]);
 
       productosPDF.push({
-        nombre: p.nombre,
-        descripcion: p.nombre,
+        descripcion: p.nombre, // descripción del catálogo
         cantidad: item.cantidad,
         precio_unitario: precio,
         subtotal: sub
       });
-
-
     }
 
-    /* ==============================
-       4️⃣ ACTUALIZAR TOTALES
-    ============================== */
-    await connection.execute(
-      'UPDATE notas_venta SET subtotal = ?, total = ? WHERE id = ?',
-      [subtotal, subtotal, notaId]
-    );
+    // 4️⃣ ACTUALIZAR TOTALES
+    await connection.execute('UPDATE notas_venta SET subtotal = ?, total = ? WHERE id = ?', [subtotal, subtotal, notaId]);
 
     await connection.commit();
 
-    /* ==============================
-       5️⃣ GENERAR PDF
-    ============================== */
+    // 5️⃣ GENERAR PDF
     const clientePlano = {
       nombre: clienteFinal.nombre || 'CONSUMIDOR FINAL',
       identificacion: clienteFinal.identificacion || '0999999999',
@@ -190,11 +156,10 @@ const crearNotaVentaInterna = async (connection, datos) => {
     }
 
     return { numero, total: subtotal };
-
   } catch (error) {
     try {
       await connection.rollback();
-    } catch { }
+    } catch {}
     throw error;
   }
 };
@@ -450,12 +415,12 @@ export const descargarNotaVentaPDF = async (req, res) => {
 
     const nota = rows[0];
 
-    // 🔥 CORRECCIÓN AQUÍ (SIN p.descripcion)
+    // 🔥 USAR PRECIO Y DETALLE GUARDADO
     const [productos] = await pool.query(`
       SELECT d.cantidad,
-       d.precio_unitario,
-       d.subtotal,
-       p.nombre AS descripcion
+             d.precio_unitario,
+             d.subtotal,
+             p.nombre AS descripcion
       FROM nota_venta_detalle d
       JOIN productos p ON p.id = d.producto_id
       WHERE d.nota_venta_id = ?
