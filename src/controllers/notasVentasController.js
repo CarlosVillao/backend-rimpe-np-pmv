@@ -132,7 +132,7 @@ const crearNotaVentaInterna = async (connection, datos) => {
         [item.cantidad, item.producto_id]
       );
 
-      pproductosPDF.push({
+      productosPDF.push({
         nombre: p.nombre,
         descripcion: p.nombre,
         cantidad: item.cantidad,
