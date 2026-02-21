@@ -5,16 +5,17 @@ import { empresa } from '../config/empresaConfig.js';
    CONFIGURACIÓN SMTP OUTLOOK (MODERNA)
    Compatible 2026
 ===================================================== */
-
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST, // smtp.gmail.com
-  port: process.env.EMAIL_PORT, // 587
-  secure: false, // STARTTLS
+  host: process.env.EMAIL_HOST,
+  port: process.env.EMAIL_PORT,
+  secure: false,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
   },
-  family: 4 // 👈 fuerza IPv4 en Railway
+  family: 4,
+  tls: { rejectUnauthorized: false },
+  connectionTimeout: 20000 // 👈 aumenta el tiempo de espera a 20s
 });
 
 /* =====================================================
