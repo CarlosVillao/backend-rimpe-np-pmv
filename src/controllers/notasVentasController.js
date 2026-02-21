@@ -101,9 +101,9 @@ const crearNotaVentaInterna = async (connection, datos) => {
 
       await connection.execute(
         `INSERT INTO nota_venta_detalle
-         (nota_venta_id, producto_id, cantidad, precio_unitario, subtotal)
-         VALUES (?, ?, ?, ?, ?)`,
-        [notaId, item.producto_id, item.cantidad, precio, sub]
+        (nota_venta_id, producto_id, cantidad, precio_unitario, subtotal)
+        VALUES (?, ?, ?, ?, ?)`,
+        [notaId, item.producto_id, item.cantidad, item.precio_unitario, sub]
       );
 
       await connection.execute('UPDATE productos SET stock = stock - ? WHERE id = ?', [item.cantidad, item.producto_id]);
@@ -111,7 +111,7 @@ const crearNotaVentaInterna = async (connection, datos) => {
       productosPDF.push({
         descripcion: p.nombre, // descripción del catálogo
         cantidad: item.cantidad,
-        precio_unitario: precio,
+        precio_unitario: item.precio_unitario,
         subtotal: sub
       });
     }
@@ -159,7 +159,7 @@ const crearNotaVentaInterna = async (connection, datos) => {
   } catch (error) {
     try {
       await connection.rollback();
-    } catch {}
+    } catch { }
     throw error;
   }
 };
@@ -418,9 +418,9 @@ export const descargarNotaVentaPDF = async (req, res) => {
     // 🔥 USAR PRECIO Y DETALLE GUARDADO
     const [productos] = await pool.query(`
       SELECT d.cantidad,
-             d.precio_unitario,
-             d.subtotal,
-             p.nombre AS descripcion
+       d.precio_unitario,
+       d.subtotal,
+       p.nombre AS descripcion
       FROM nota_venta_detalle d
       JOIN productos p ON p.id = d.producto_id
       WHERE d.nota_venta_id = ?
