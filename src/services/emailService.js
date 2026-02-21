@@ -1,36 +1,21 @@
-import nodemailer from 'nodemailer';
+import sgMail from '@sendgrid/mail';
 import { empresa } from '../config/empresaConfig.js';
 
 /* =====================================================
-   CONFIGURACIÓN SMTP OUTLOOK (MODERNA)
-   Compatible 2026
-===================================================== */
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  },
-  family: 4,
-  tls: { rejectUnauthorized: false },
-  //connectionTimeout: 20000 // 👈 aumenta el tiempo de espera a 20s
-});
+   CONFIGURACIÓN SENDGRID
+   ===================================================== */
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 /* =====================================================
    ENVIAR NOTA DE VENTA
 ===================================================== */
-
 export const enviarNotaVentaPorCorreo = async ({
   numero,
   clienteEmail,
   pdfBuffer,
   total
 }) => {
-
   try {
-
     if (!pdfBuffer) {
       throw new Error('PDF vacío o no generado');
     }
@@ -49,9 +34,9 @@ export const enviarNotaVentaPorCorreo = async ({
       throw new Error('No hay destinatarios definidos');
     }
 
-    const info = await transporter.sendMail({
-      from: `"${empresa?.nombre || 'Casa Musical'}" <${process.env.EMAIL_USER}>`,
-      to: destinatarios.join(','),
+    const msg = {
+      to: destinatarios,
+      from: process.env.EMAIL_EMPRESA, // remitente verificado en SendGrid
       subject: `Nota de Venta ${numero}`,
       text: `
 Gracias por su compra.
@@ -66,32 +51,29 @@ Este correo fue generado automáticamente.
       `,
       attachments: [
         {
+          content: pdfBuffer.toString('base64'),
           filename: `${numero}.pdf`,
-          content: pdfBuffer,
-          contentType: 'application/pdf'
+          type: 'application/pdf',
+          disposition: 'attachment'
         }
       ]
-    });
+    };
+
+    await sgMail.send(msg);
 
     console.log(`✅ Nota ${numero} enviada correctamente`);
-    console.log(`📧 MessageId: ${info.messageId}`);
-
     return true;
 
   } catch (error) {
-
     console.error(`❌ Error enviando correo nota ${numero}:`);
     console.error(error.message);
-
     return false;
   }
 };
 
-
 /* =====================================================
    ENVIAR COMISIÓN MENSUAL
 ===================================================== */
-
 export const enviarComisionMensual = async ({
   anio,
   mes,
@@ -100,9 +82,7 @@ export const enviarComisionMensual = async ({
   totalComision,
   pdfBuffer
 }) => {
-
   try {
-
     if (!pdfBuffer) {
       throw new Error('PDF de comisión vacío');
     }
@@ -117,17 +97,17 @@ export const enviarComisionMensual = async ({
       destinatarios.push(empresa.email);
     }
 
-    if (process.env.EMAIL_USER) {
-      destinatarios.push(process.env.EMAIL_USER);
+    if (process.env.EMAIL_EMPRESA) {
+      destinatarios.push(process.env.EMAIL_EMPRESA);
     }
 
     if (destinatarios.length === 0) {
       throw new Error('No hay destinatarios para comisión mensual');
     }
 
-    const info = await transporter.sendMail({
-      from: `"${empresa?.nombre || 'Sistema de Facturación'}" <${process.env.EMAIL_USER}>`,
-      to: destinatarios.join(','),
+    const msg = {
+      to: destinatarios,
+      from: process.env.EMAIL_EMPRESA,
       subject: `Comisión mensual - ${nombreMes.toUpperCase()} ${anio}`,
       text: `
 REPORTE DE COMISIÓN MENSUAL
@@ -141,23 +121,22 @@ Este correo fue generado automáticamente por el sistema.
       `,
       attachments: [
         {
+          content: pdfBuffer.toString('base64'),
           filename: `comision_${anio}_${mes}.pdf`,
-          content: pdfBuffer,
-          contentType: 'application/pdf'
+          type: 'application/pdf',
+          disposition: 'attachment'
         }
       ]
-    });
+    };
+
+    await sgMail.send(msg);
 
     console.log(`✅ Comisión mensual enviada`);
-    console.log(`📧 MessageId: ${info.messageId}`);
-
     return true;
 
   } catch (error) {
-
     console.error('❌ Error enviando comisión mensual:');
     console.error(error.message);
-
     return false;
   }
 };
