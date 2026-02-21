@@ -7,15 +7,15 @@ import { empresa } from '../config/empresaConfig.js';
 ===================================================== */
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // porque usamos STARTTLS
+  host: process.env.EMAIL_HOST, // smtp.gmail.com
+  port: process.env.EMAIL_PORT, // 587
+  secure: false, // STARTTLS
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
-  }
+  },
+  family: 4 // 👈 fuerza IPv4 en Railway
 });
-
 
 /* =====================================================
    ENVIAR NOTA DE VENTA
